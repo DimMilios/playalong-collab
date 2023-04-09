@@ -1,0 +1,39 @@
+.flash {
+    animation: flash 1000ms linear infinite;
+  }
+  
+  @keyframes flash {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.2;
+    }
+    100% {
+      opacity: 1;
+    }
+  } 
+#waveform {
+    width: 800px;
+    height: 50px;  
+  }
+
+waveform-class {
+  width: 800px;
+  height: 50px; 
+  }
+
+form {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+  
+label {
+  margin-right: 10px;
+}
+
+.smallslider {
+  width: 50px;
+}

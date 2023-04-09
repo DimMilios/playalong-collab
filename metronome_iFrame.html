@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <script>
+    try {
+      if (document.domain == 'athena.imuscica.eu') {
+        console.log("[Metro] Initial domain is: " + document.domain);
+        document.domain = 'imuscica.eu';
+        console.log("[Metro] domain overwritten to: " + document.domain);
+      }
+      else {
+        console.log("[Metro] domain remained: " + document.domain);
+      }
+    }
+    catch (e) {
+      console.log("[Metro] cannot overwrite domain.");
+    }
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width user-scalable=no">
+  <title>Metro</title>
+
+</head>
+
+<body>
+  <center>
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <div style="display:flex; flex-direction:row;">
+        <span id='tempo' style="padding-left: 30px;"> Tempo </span>
+        <span id='timeSignature' style="padding-left: 85px;"> Time Signature </span>
+        <span id='resolution_span' style="padding-left: 25px;padding-right: 30px;"> Resolution
+        </span>
+        <span id='startBar' style="padding-right: 30px;"> Start bar# </span>
+        <span id='stopBar' style="padding-right: 30px;"> Stop bar# </span>
+        <span id='playstop_span' style="padding-right: 20px;"> Play/Stop </span>
+        <span id='metroCont_span' style="padding-right: 40px;"> Non-Stop </span>
+        <span id='volume' style="padding-left: 30px; padding-right: 10px;"> Volume %</span>
+      </div>
+      <div style="display:flex; flex-direction:row;">
+        <input type="range" min="10" max="200" value="90" class="slider" id="tempoSlider"
+          oninput="setTempo(this.value)">
+        <span id='tempoValue' style="padding-left: 10px; padding-right: 40px;"> -- </span>
+        <select id="TSNumerator" onchange="setNumerator(this.value)" style="width:35px;">
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+        </select>
+        <span style="padding-right: 3px;padding-left: 3px;"> / </span>
+        <select id="TSDenominator" onchange="setDenominator(this.value)"
+          style="width:35px; padding-right: 10px;">
+          <option value="4">4</option>
+          <option value="8">8</option>
+        </select>
+        <span style="padding-left: 55px;"></span>
+        <select id="resolution" onchange="setResolution(this.value)"
+          style="width:60px; padding-left: 10px;">
+          <option value="4">4ths</option>
+          <option value="8">8ths</option>
+          <option value="16">16ths</option>
+        </select>
+        <span style="padding-left: 40px;"></span>
+        <input type="text" id="startBarInput" value="-1" onchange="setStartBar(this.value)"
+          style="padding-right: 10px;" size="3">
+        <span style="padding-left: 30px;"></span>
+        <input type="text" id="stopBarInput" value="1" onchange="setStopBar(this.value)"
+          style="padding-right: 10px;" size="3">
+        <span style="padding-left: 55px;"></span>
+        <input type="checkbox" id="playStop" onclick="setPlayStop(this.checked)"
+          style="padding-right: 10px;">
+        <span style="padding-left: 70px;"></span>
+        <input type="checkbox" id="metroCont" onclick="setMetroCont(this.checked)"
+          style="padding-right: 10px;">
+        <span style="padding-left: 40px;"></span>
+        <input type="range" min="0" max="100" value="95" class="volume-slider" id="volumeSlider"
+          oninput="setVolume(this.value)">
+        <span id='volumeValue' style="padding-left: 10px; padding-right: 0px;"> -- </span>
+      </div>
+
+
+      <script type="text/javascript">
+
+        var start_bar_no = -2;
+        var stop_bar_no = 0;
+
+        // initialise UI
+        document.getElementById('tempoValue').innerHTML = document.getElementById('tempoSlider').value;
+        document.getElementById('volumeValue').innerHTML = document.getElementById('volumeSlider').value;
+        document.getElementById('TSNumerator').selectedIndex = 2;
+        document.getElementById('TSDenominator').selectedIndex = 0;
+        document.getElementById('resolution').selectedIndex = 0;
+        document.getElementById('playStop').checked = false;
+
+
+
+        // viglis
+        //document.getElementById('startBar').innerHTML = document.getElementById('startBarInput').value;
+        //document.getElementById('stopBar').innerHTML = document.getElementById('stopBarInput').value;
+
+
+        // 1 -- communicate changes to the metronome through these functions
+        function setNumerator(v) {
+          //console.log('numerator changed to: ', v);
+          parent.metronome.setNumerator(v);
+        }
+        function setDenominator(v) {
+          //console.log('denominator changed to: ', v);
+          parent.metronome.setDenominator(v);
+        }
+        function setTempo(t) {
+          parent.metronome.setTempo(t);
+          document.getElementById('tempoValue').innerHTML = t;
+        }
+        function setResolution(r) {
+          //console.log('resolution changed to: ', r);
+          parent.metronome.setResolution(r);
+        }
+        function setPlayStop(b) {
+          parent.metronome.setPlayStop(b);
+          //console.log('playStop changed to: ', b);
+        }
+
+        // viglis
+        function setMetroCont(c) {
+          parent.metronome.setMetroCont(c);
+          //console.log('Metronome will play continuously during recording:',c);
+          if (c == true) {
+            document.getElementById("startBarInput").disabled = true;
+            document.getElementById("stopBarInput").disabled = true;
+            //console.log("no input allowed");
+
+          } else {
+            document.getElementById("startBarInput").disabled = false;
+            document.getElementById("stopBarInput").disabled = false;
+            //console.log("input allowed");
+          }
+        }
+
+        function setVolume(vo) {
+          parent.metronome.setVolume(vo);
+          document.getElementById('volumeValue').innerHTML = vo;
+        }
+
+        function setStartBar(start_value) {
+          const numberValue = Number(start_value);
+
+          if (isNaN(numberValue) || numberValue < -5 || numberValue > stop_bar_no) {
+            // If the value is not within the allowed range, display an error message
+            alert('Please enter a valid bar# greater than -5 ');
+            document.getElementById('startBarInput').value = start_bar_no;
+            return;
+          }
+          else {
+            // If the value is within the allowed range, update the UI
+            start_bar_no = start_value;
+            document.getElementById('startBarInput').value = start_value;
+            // and send the value to metronome.js
+            parent.metronome.setStartBar(start_value);
+            //console.log('metronome will start from bar# ',start_value);
+          }
+        }
+        function setStopBar(stop_value) {
+          const numberValue = Number(stop_value);
+          if (isNaN(numberValue) || numberValue < start_bar_no) {
+            // If the value is not within the allowed range, display an error message
+            alert('Please enter a valid bar#');
+            document.getElementById('stopBarInput').value = stop_bar_no;
+            return;
+          }
+          else {
+            // If the value is within the allowed range, update the UI
+            stop_bar_no = stop_value;
+            document.getElementById('stopBarInput').value = stop_value;
+            // and send the value to metronome.js
+            parent.metronome.setStopBar(stop_value);
+            //console.log('metronome will stop at the beginning of bar# ',stop_value);
+          }
+        }
+        // \viglis
+
+
+        /*
+              // NOT REQUIRED for the current version - events for time changes
+              parent.document.addEventListener('barEvent', function (e){
+                console.log('on iframe bar event');
+                document.getElementById('bar').innerHTML = e.barNum;
+              });
+              parent.document.addEventListener('beatEvent', function (e){
+                document.getElementById('beat').innerHTML = e.beatNum;
+              });
+              parent.document.addEventListener('sixteenthEvent', function (e){
+                document.getElementById('16th').innerHTML = e.sixteenthNum;
+              });
+        */
+
+        // subscribe to start/stop events
+        // subscribe to setup metronome messages caused by tool
+        // 2 -- subscribe to metronome messages for changing the UI of the metronome when tool changes its behaviour
+        parent.document.addEventListener('startedSoundEvent', function (e) {
+          document.getElementById('playStop').checked = true;
+        });
+        parent.document.addEventListener('stoppedEvent', function (e) {
+          document.getElementById('playStop').checked = false;
+        });
+      </script>
+    </div>
+  </center>
+</body>
+
+</html>
