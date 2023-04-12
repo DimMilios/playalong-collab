@@ -1,9 +1,9 @@
-# run python server
-python -m http.server 8182
+# Requirements
+- nodejs
+- npm
 
-# check out index.html, the comments that include VELENIS
+# Install dependencies
+npm install
 
-# in js/audioSources.js add a soundfont player
-# possible sources:
-https://javascript.hotexamples.com/examples/soundfont-player/-/instrument/javascript-instrument-function-examples.html
-https://github.com/danigb/soundfont-player
+# Run in dev mode
+npm run dev
