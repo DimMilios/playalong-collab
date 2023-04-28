@@ -1,11 +1,13 @@
-'use strict';
+"use strict";
 
 //webkitURL is deprecated but nevertheless
 URL = window.URL || window.webkitURL;
 
 // Get the value of the 'f' parameter from the URL
 const urlParams = new URLSearchParams(window.location.search);
-const fileParam = urlParams.get('f');
+const fileParam = urlParams.get("f");
+const userParam = urlParams.get("u");
+const courseParam = urlParams.get("course");
 
 var firstWaveform = true;
 var gumStream; //stream from getUserMedia()
@@ -24,6 +26,19 @@ window.speed01 = 1;
 window.tempo = 90;
 speedMatrix[0] = 1;
 
+// Jitsi room parameters
+var Jitsi_Room_Name = "test-room";
+var Jitsi_User_Name = "test-user";
+if (userParam) {
+  Jitsi_User_Name = userParam;
+}
+var Jitsi_Course_Name = "test-room";
+if (courseParam) {
+  Jitsi_Course_Name = courseParam;
+}
+var roomNameInput = document.querySelector("#meet-room");
+roomNameInput.value = Jitsi_Course_Name;
+
 var recordedBlobs = []; // Array to hold all the recorded blobs
 var selectedBlobs = []; // Array to hold all blobs to be mixed
 var recordedBuffers = []; // Array to hold all PCM audio recordings
@@ -31,14 +46,7 @@ var selectedBuffers = []; // Array to hold all PCM audio recordings to be mixed
 var noRecordings = 0; // Holds how many are the audio recordings
 var sampleRate; // this will hold the sample rate used for recordings
 
-var bpmInput = document.querySelector('#bpm');
-var bpm = bpmInput.value;
-var startMetro = document.getElementById('start_metro');
-var stopMetro = document.getElementById('stop_metro');
-//startMetro.addEventListener('click', startMetronome);
-//stopMetro.addEventListener('click', stopMetronome);
-
-var audio = new Audio('audio/metronome.wav');
+// var audio = new Audio('audio/metronome.wav');
 // Set the tempo (in beats per minute)
 var tempo = 120;
 
@@ -48,54 +56,54 @@ var interval = 60000 / tempo;
 // shim for AudioContext when it's not avb.
 //var AudioContext = window.AudioContext || window.webkitAudioContext;
 var audioContext; //audio context to help us record
-var recordButton = document.getElementById('recordButton');
-var stopButton = document.getElementById('stopButton');
-var pauseButton = document.getElementById('pauseButton');
-var playPauseAllButton = document.getElementById('playpauseallButton');
-var playAllButton = document.getElementById('playallButton');
-var pauseAllButton = document.getElementById('pauseallButton');
-var stopAllButton = document.getElementById('stopallButton');
-var combineSelectedButton = document.getElementById('combineselectedButton');
+var recordButton = document.getElementById("recordButton");
+var stopButton = document.getElementById("stopButton");
+var pauseButton = document.getElementById("pauseButton");
+var playPauseAllButton = document.getElementById("playpauseallButton");
+var playAllButton = document.getElementById("playallButton");
+var pauseAllButton = document.getElementById("pauseallButton");
+var stopAllButton = document.getElementById("stopallButton");
+var combineSelectedButton = document.getElementById("combineselectedButton");
 
-var playPauseButton0 = document.getElementById('playPauseButton0');
-var playButton0 = document.getElementById('playButton0');
-var pauseButton0 = document.getElementById('pauseButton0');
-var muteButton0 = document.getElementById('muteButton0');
-var stopButton0 = document.getElementById('stopButton0');
-var waveform0Container = document.getElementById('waveform0');
-var timeline0Container = document.getElementById('timeline0');
-var controls0Container = document.getElementById('controls0');
-controls0Container.removeAttribute('hidden');
+var playPauseButton0 = document.getElementById("playPauseButton0");
+var playButton0 = document.getElementById("playButton0");
+var pauseButton0 = document.getElementById("pauseButton0");
+var muteButton0 = document.getElementById("muteButton0");
+var stopButton0 = document.getElementById("stopButton0");
+var waveform0Container = document.getElementById("waveform0");
+var timeline0Container = document.getElementById("timeline0");
+var controls0Container = document.getElementById("controls0");
+controls0Container.removeAttribute("hidden");
 
-waveform0Container.setAttribute('hidden', 'true');
-timeline0Container.setAttribute('hidden', 'true');
+waveform0Container.setAttribute("hidden", "true");
+timeline0Container.setAttribute("hidden", "true");
 //controls0Container.setAttribute("hidden","true");
 
 playPauseButton0.innerHTML =
   '<svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
-playPauseButton0.className = 'wavesurfer-button btn btn-lg';
-playPauseButton0.setAttribute('title', 'Play');
-playPauseButton0.setAttribute('hidden', 'true');
+playPauseButton0.className = "wavesurfer-button btn btn-lg";
+playPauseButton0.setAttribute("title", "Play");
+playPauseButton0.setAttribute("hidden", "true");
 muteButton0.innerHTML =
   '<svg fill="#000000" width="45" height="45" viewBox="-2.5 0 19 19" xmlns="http://www.w3.org/2000/svg" class="cf-icon-svg"><path d="M7.365 4.785v9.63c0 .61-.353.756-.784.325l-2.896-2.896H1.708A1.112 1.112 0 0 1 .6 10.736V8.464a1.112 1.112 0 0 1 1.108-1.108h1.977L6.581 4.46c.43-.43.784-.285.784.325zm2.468 7.311a3.53 3.53 0 0 0 0-4.992.554.554 0 0 0-.784.784 2.425 2.425 0 0 1 0 3.425.554.554 0 1 0 .784.783zm1.791 1.792a6.059 6.059 0 0 0 0-8.575.554.554 0 1 0-.784.783 4.955 4.955 0 0 1 0 7.008.554.554 0 1 0 .784.784z"/></svg>';
-muteButton0.className = 'wavesurfer-button btn btn-lg';
-muteButton0.title = 'Mute';
-muteButton0.setAttribute('hidden', 'true');
+muteButton0.className = "wavesurfer-button btn btn-lg";
+muteButton0.title = "Mute";
+muteButton0.setAttribute("hidden", "true");
 stopButton0.innerHTML =
   '<svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="black" class="bi bi-skip-start-fill" viewBox="0 0 16 16"><path d="M4 4a.5.5 0 0 1 1 0v3.248l6.267-3.636c.54-.313 1.232.066 1.232.696v7.384c0 .63-.692 1.01-1.232.697L5 8.753V12a.5.5 0 0 1-1 0V4z" /></svg>';
-stopButton0.className = 'wavesurfer-button btn btn-lg';
-stopButton0.title = 'Stop';
-stopButton0.setAttribute('hidden', 'true');
-playButton0.setAttribute('hidden', 'true');
-pauseButton0.setAttribute('hidden', 'true');
+stopButton0.className = "wavesurfer-button btn btn-lg";
+stopButton0.title = "Stop";
+stopButton0.setAttribute("hidden", "true");
+playButton0.setAttribute("hidden", "true");
+pauseButton0.setAttribute("hidden", "true");
 
 //add events to some buttons
-recordButton.addEventListener('click', startRecording);
-stopButton.addEventListener('click', stopRecording);
-pauseButton.addEventListener('click', pauseRecording);
-playPauseAllButton.addEventListener('click', playpauseAll);
-stopAllButton.addEventListener('click', stopAll);
-combineSelectedButton.addEventListener('click', combineSelected);
+recordButton.addEventListener("click", startRecording);
+stopButton.addEventListener("click", stopRecording);
+pauseButton.addEventListener("click", pauseRecording);
+playPauseAllButton.addEventListener("click", playpauseAll);
+stopAllButton.addEventListener("click", stopAll);
+combineSelectedButton.addEventListener("click", combineSelected);
 //playAllButton.addEventListener("click", playAll);
 //pauseAllButton.addEventListener("click", pauseAll);
 
@@ -107,29 +115,34 @@ function setPlaybackSpeed(s) {
   speed01 = s / 100;
   window.speed01 = speed01;
   var t = window.tempo;
-  console.log('tempo =', t * speed01);
+  console.log("tempo =", t * speed01);
   parent.metronome.setTempo(t);
-  console.log('speed=', speed);
-  console.log('speed01=', speed01);
-  var playButtons = document.querySelectorAll('.play-button');
-  console.log('recordings count:', playButtons.length);
+  console.log("speed=", speed);
+  console.log("speed01=", speed01);
+  var playButtons = document.querySelectorAll(".play-button");
+  console.log("recordings count:", playButtons.length);
   for (var i = 0; i < playButtons.length; i++) {
-    console.log('recording speed', i + 1, 'was', playButtons[i].speed);
-    console.log('desired speed', i + 1, ' is', speed / 100);
+    console.log("recording speed", i + 1, "was", playButtons[i].speed);
+    console.log("desired speed", i + 1, " is", speed / 100);
     playButtons[i].set_speed = speed01 / playButtons[i].speed;
-    console.log('multiply by', playButtons[i].set_speed, 'to achieve this');
+    console.log("multiply by", playButtons[i].set_speed, "to achieve this");
     //var finalspeed = playButtons[i].set_speed*playButtons[i].speed;
     //console.log("speed",i+1,"=",finalspeed);
   }
 }
 
+function setSpeed(s) {
+  setPlaybackSpeed(s);
+  document.getElementById("speedValue").innerHTML = s + " %";
+}
+
 // recording section ///////////////////////////////////////////////////////
 function startRecording() {
   //console.log("recordButton clicked");
-  stopAllButton.setAttribute('hidden', 'true');
-  playPauseAllButton.setAttribute('hidden', 'true');
-  var playButtons = document.querySelectorAll('.play-button');
-  var playPauseButtons = document.querySelectorAll('.play-pause-button');
+  stopAllButton.setAttribute("hidden", "true");
+  playPauseAllButton.setAttribute("hidden", "true");
+  var playButtons = document.querySelectorAll(".play-button");
+  var playPauseButtons = document.querySelectorAll(".play-pause-button");
   //console.log("click all play buttons")
   //console.log("playButtons.length = ",playButtons.length);
 
@@ -152,16 +165,16 @@ function startRecording() {
     playPauseButtons[i].innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor"	class="bi bi-pause-fill" viewBox="0 0 16 16"><path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z" /></svg>';
     //playPauseButtons[i].setAttribute("title","Play");
-    playPauseButtons[i].setAttribute('title', 'Pause');
+    playPauseButtons[i].setAttribute("title", "Pause");
   }
 
   recordButton.disabled = true;
-  recordButton.setAttribute('title', '');
-  recordButton.classList.add('flash');
+  recordButton.setAttribute("title", "");
+  recordButton.classList.add("flash");
   stopButton.disabled = false;
-  stopButton.setAttribute('title', 'Stop recording');
+  stopButton.setAttribute("title", "Stop recording");
   pauseButton.disabled = false;
-  pauseButton.setAttribute('title', 'Pause recording');
+  pauseButton.setAttribute("title", "Pause recording");
   playPauseButton0.innerHTML =
     '<svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="currentColor" class="bi bi-pause-fill" viewBox="0 0 16 16"><path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z" /></svg>';
 
@@ -182,8 +195,8 @@ function startRecording() {
     audioContext = new AudioContext();
 
     //update the format
-    document.getElementById('formats').innerHTML =
-      'Format: 1 channel pcm @ ' + audioContext.sampleRate / 1000 + 'kHz';
+    document.getElementById("formats").innerHTML =
+      "Format: 1 channel pcm @ " + audioContext.sampleRate / 1000 + "kHz";
 
     /* assign to gumStream for later use */
     gumStream = stream;
@@ -218,9 +231,9 @@ function startRecording() {
 
 function pauseRecording() {
   //console.log("pauseButton clicked rec.recording=",rec.recording );
-  var pauseButtons = document.querySelectorAll('.pause-button');
-  var playButtons = document.querySelectorAll('.play-button');
-  var playPauseButtons = document.querySelectorAll('.play-pause-button');
+  var pauseButtons = document.querySelectorAll(".pause-button");
+  var playButtons = document.querySelectorAll(".play-button");
+  var playPauseButtons = document.querySelectorAll(".play-pause-button");
   //console.log("click all pause buttons if recording is paused");
   //console.log("and all play buttons if recording is resumed");
   //console.log("pauseButtons.length = ",pauseButtons.length);
@@ -230,21 +243,21 @@ function pauseRecording() {
     rec.stop();
     parent.metronome.setPlayStop(false);
     pauseButton.disabled = false;
-    pauseButton.setAttribute('title', 'Resume recording');
-    pauseButton.classList.add('flash');
+    pauseButton.setAttribute("title", "Resume recording");
+    pauseButton.classList.add("flash");
     recordButton.disabled = true;
-    recordButton.classList.remove('flash');
+    recordButton.classList.remove("flash");
     pauseButton0.click();
     playPauseButton0.innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
-    playPauseButton0.title = 'Play';
+    playPauseButton0.title = "Play";
     for (var i = 0; i < pauseButtons.length; i++) {
       //console.log(i);
       pauseButtons[i].click();
       playPauseButtons[i].innerHTML =
         '<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
       //playPauseButtons[i].innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-pause-fill" viewBox="0 0 16 16"><path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z" /></svg>';
-      playPauseButtons[i].setAttribute('title', 'Play');
+      playPauseButtons[i].setAttribute("title", "Play");
       //playPauseButtons[i].setAttribute("title","Pause");
     }
   } else {
@@ -253,13 +266,13 @@ function pauseRecording() {
     rec.record();
     parent.metronome.setPlayStop(true);
     pauseButton.disabled = false;
-    pauseButton.setAttribute('title', 'Pause recording');
-    pauseButton.classList.remove('flash');
-    recordButton.classList.add('flash');
+    pauseButton.setAttribute("title", "Pause recording");
+    pauseButton.classList.remove("flash");
+    recordButton.classList.add("flash");
     playButton0.click();
     playPauseButton0.innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="currentColor" class="bi bi-pause-fill" viewBox="0 0 16 16"><path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z" /></svg>';
-    playPauseButton0.title = 'Pause';
+    playPauseButton0.title = "Pause";
     for (var i = 0; i < pauseButtons.length; i++) {
       //console.log(i);
       playButtons[i].click();
@@ -267,7 +280,7 @@ function pauseRecording() {
       playPauseButtons[i].innerHTML =
         '<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor"	class="bi bi-pause-fill" viewBox="0 0 16 16"><path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z" /></svg>';
       //playPauseButtons[i].setAttribute("title","Play");
-      playPauseButtons[i].setAttribute('title', 'Pause');
+      playPauseButtons[i].setAttribute("title", "Pause");
       recordButton.disabled = true;
     }
   }
@@ -275,9 +288,9 @@ function pauseRecording() {
 
 function stopRecording() {
   //console.log("stopButton clicked");
-  var stopButtons = document.querySelectorAll('.stop-button');
-  var playButtons = document.querySelectorAll('.play-button');
-  var playPauseButtons = document.querySelectorAll('.play-pause-button');
+  var stopButtons = document.querySelectorAll(".stop-button");
+  var playButtons = document.querySelectorAll(".play-button");
+  var playPauseButtons = document.querySelectorAll(".play-pause-button");
   //console.log("click all stop buttons")
   //console.log("stopButtons.length = ",stopButtons.length);
   for (var i = 0; i < stopButtons.length; i++) {
@@ -288,29 +301,29 @@ function stopRecording() {
     playPauseButtons[i].innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
     //playPauseButtons[i].innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-pause-fill" viewBox="0 0 16 16"><path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z" /></svg>';
-    playPauseButtons[i].setAttribute('title', 'Play');
+    playPauseButtons[i].setAttribute("title", "Play");
     //playPauseButtons[i].setAttribute("title","Pause");
   }
   stopButton0.click();
 
   //disable the stop button, enable the record too allow for new recordings
   stopButton.disabled = true;
-  stopButton.setAttribute('title', '');
+  stopButton.setAttribute("title", "");
   recordButton.disabled = false;
-  recordButton.setAttribute('title', 'Start recording');
+  recordButton.setAttribute("title", "Start recording");
   pauseButton.disabled = true;
-  pauseButton.setAttribute('title', '');
-  recordButton.classList.remove('flash');
-  pauseButton.classList.remove('flash');
+  pauseButton.setAttribute("title", "");
+  recordButton.classList.remove("flash");
+  pauseButton.classList.remove("flash");
   playPauseButton0.innerHTML =
     '<svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
-  playPauseButton0.title = 'Play';
+  playPauseButton0.title = "Play";
   playPauseAllButton.innerHTML =
     '<svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
   playPauseAllButton.hidden = false;
-  playPauseAllButton.title = 'Play all';
+  playPauseAllButton.title = "Play all";
   stopAllButton.hidden = false;
-  stopAllButton.title = 'Stop all';
+  stopAllButton.title = "Stop all";
   combineSelectedButton.hidden = false;
   //reset button just in case the recording is stopped while paused
   pauseButton.innerHTML =
@@ -330,7 +343,7 @@ function stopRecording() {
   //get the raw PCM audio data as an array of float32 numbers
   rec.getBuffer(function (buffer) {
     recordedBuffers.push(buffer); //push the buffer to an array
-    console.log('recordedBuffers = ', recordedBuffers);
+    console.log("recordedBuffers = ", recordedBuffers);
 
     // Yjs only accepts UInt8Array types
     // let arrayBuffer = buffer[0].buffer;
@@ -346,10 +359,10 @@ function stopRecording() {
 
   rec.exportWAV(function (blob) {
     recordedBlobs.push(blob);
-    console.log('recordedBlobs', recordedBlobs);
+    console.log("recordedBlobs", recordedBlobs);
 
     // Yjs only accepts UInt8Array types
-    blob.arrayBuffer().then(binaryData => {
+    blob.arrayBuffer().then((binaryData) => {
       window.sharedRecordedBlobs.push([
         {
           id: Math.random().toString(36).slice(-6),
@@ -368,53 +381,53 @@ function createDownloadLink(blob, id) {
   var url = URL.createObjectURL(blob);
 
   // create a new container element for the waveform, timeline, and buttons
-  var scrollContainer = document.createElement('div');
-  scrollContainer.id = 'scrollContainer' + count;
-  scrollContainer.classList.add('waveform-class');
-  scrollContainer.style.height = '70px';
-  scrollContainer.style.overflow = 'auto';
+  var scrollContainer = document.createElement("div");
+  scrollContainer.id = "scrollContainer" + count;
+  scrollContainer.classList.add("waveform-class");
+  scrollContainer.style.height = "70px";
+  scrollContainer.style.overflow = "auto";
   //scrollContainer.speed = speed;
   document.body.appendChild(scrollContainer); // append the container to the body
 
   // create a new container element for wavesurfer
-  var container = document.createElement('div');
-  container.id = 'waveform' + count;
-  container.classList.add('waveform-class');
+  var container = document.createElement("div");
+  container.id = "waveform" + count;
+  container.classList.add("waveform-class");
   scrollContainer.appendChild(container); // append the container to the body
 
-  var timelineContainer = document.createElement('div');
-  timelineContainer.id = 'timeline' + count;
-  timelineContainer.classList.add('timeline-class');
+  var timelineContainer = document.createElement("div");
+  timelineContainer.id = "timeline" + count;
+  timelineContainer.classList.add("timeline-class");
   scrollContainer.appendChild(timelineContainer); // append the container to the body
 
-  var buttonContainer = document.createElement('div');
-  buttonContainer.id = 'buttons' + count;
-  buttonContainer.classList.add('buttons-class');
+  var buttonContainer = document.createElement("div");
+  buttonContainer.id = "buttons" + count;
+  buttonContainer.classList.add("buttons-class");
   document.body.appendChild(buttonContainer); // append the container to the body
 
   // create a new wavesurfer instance
   var wavesurfer = WaveSurfer.create({
-    container: '#waveform' + count,
-    waveColor: '#345',
+    container: "#waveform" + count,
+    waveColor: "#345",
     minPxPerSec: 100,
     cursorWidth: 1,
     height: 50,
-    scrollParent: '#scrollContainer' + count,
+    scrollParent: "#scrollContainer" + count,
     scrollParent: true,
-    progressColor: '#e81',
+    progressColor: "#e81",
     plugins: [
       WaveSurfer.cursor.create({
         showTime: true,
         opacity: 1,
         customShowTimeStyle: {
-          'background-color': '#345',
-          color: '#0f5',
-          padding: '2px',
-          'font-size': '10px',
+          "background-color": "#345",
+          color: "#0f5",
+          padding: "2px",
+          "font-size": "10px",
         },
       }),
       WaveSurfer.timeline.create({
-        container: '#timeline' + count, // specify the container for the timeline
+        container: "#timeline" + count, // specify the container for the timeline
         height: 20, // specify the height of the timeline
       }),
     ],
@@ -430,7 +443,7 @@ function createDownloadLink(blob, id) {
 
   //let soundtouchNode;
 
-  wavesurfer.on('ready', function () {
+  wavesurfer.on("ready", function () {
     let st = new window.soundtouch.SoundTouch(wavesurfer.backend.ac.sampleRate);
     let buffer = wavesurfer.backend.buffer;
     let channels = buffer.numberOfChannels;
@@ -457,7 +470,7 @@ function createDownloadLink(blob, id) {
 
     let soundtouchNode;
 
-    wavesurfer.on('play', function () {
+    wavesurfer.on("play", function () {
       seekingPos = ~~(wavesurfer.backend.getPlayedPercents() * length);
       st.tempo = wavesurfer.getPlaybackRate();
 
@@ -476,41 +489,41 @@ function createDownloadLink(blob, id) {
       }
     });
 
-    wavesurfer.on('pause', function () {
+    wavesurfer.on("pause", function () {
       soundtouchNode && soundtouchNode.disconnect();
     });
 
-    wavesurfer.on('seek', function () {
+    wavesurfer.on("seek", function () {
       seekingPos = ~~(wavesurfer.backend.getPlayedPercents() * length);
     });
   });
 
   //console.log("wavesufer speed was",speed,"%");
 
-  wavesurfer.on('finish', function () {
+  wavesurfer.on("finish", function () {
     //wavesurfer.seekTo(0); // move the cursor to the beggining of the wavesurfer waveform
     playPauseButton.innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
-    playPauseButton.title = 'Play';
+    playPauseButton.title = "Play";
   });
 
   // create the buttons /////////////////////////////////////////////
   // create mute buttons
-  var muteButton = document.createElement('button');
+  var muteButton = document.createElement("button");
   muteButton.innerHTML =
     '<svg fill="#000000" width="25" height="25" viewBox="-2.5 0 19 19" xmlns="http://www.w3.org/2000/svg" class="cf-icon-svg"><path d="M7.365 4.785v9.63c0 .61-.353.756-.784.325l-2.896-2.896H1.708A1.112 1.112 0 0 1 .6 10.736V8.464a1.112 1.112 0 0 1 1.108-1.108h1.977L6.581 4.46c.43-.43.784-.285.784.325zm2.468 7.311a3.53 3.53 0 0 0 0-4.992.554.554 0 0 0-.784.784 2.425 2.425 0 0 1 0 3.425.554.554 0 1 0 .784.783zm1.791 1.792a6.059 6.059 0 0 0 0-8.575.554.554 0 1 0-.784.783 4.955 4.955 0 0 1 0 7.008.554.554 0 1 0 .784.784z"/></svg>';
-  muteButton.className = 'wavesurfer-button mute-button btn btn-lg';
-  muteButton.style.marginRight = '30px';
-  muteButton.setAttribute('title', 'Mute');
-  muteButton.addEventListener('click', function () {
+  muteButton.className = "wavesurfer-button mute-button btn btn-lg";
+  muteButton.style.marginRight = "30px";
+  muteButton.setAttribute("title", "Mute");
+  muteButton.addEventListener("click", function () {
     if (wavesurfer.getMute()) {
       wavesurfer.setMute(false);
-      muteButton.setAttribute('title', 'Mute');
+      muteButton.setAttribute("title", "Mute");
       muteButton.innerHTML =
         '<svg fill="#000000" width="25" height="25" viewBox="-2.5 0 19 19" xmlns="http://www.w3.org/2000/svg" class="cf-icon-svg"><path d="M7.365 4.785v9.63c0 .61-.353.756-.784.325l-2.896-2.896H1.708A1.112 1.112 0 0 1 .6 10.736V8.464a1.112 1.112 0 0 1 1.108-1.108h1.977L6.581 4.46c.43-.43.784-.285.784.325zm2.468 7.311a3.53 3.53 0 0 0 0-4.992.554.554 0 0 0-.784.784 2.425 2.425 0 0 1 0 3.425.554.554 0 1 0 .784.783zm1.791 1.792a6.059 6.059 0 0 0 0-8.575.554.554 0 1 0-.784.783 4.955 4.955 0 0 1 0 7.008.554.554 0 1 0 .784.784z"/></svg>';
     } else {
       wavesurfer.setMute(true);
-      muteButton.setAttribute('title', 'Unmute');
+      muteButton.setAttribute("title", "Unmute");
       muteButton.innerHTML =
         '<svg fill="#000000" width="25" height="25" viewBox="0 0 19 19" xmlns="http://www.w3.org/2000/svg"><path clip-rule="evenodd" d="m2 7.5v3c0 .8.6 1.5 1.4 1.5h2.3l3.2 2.8c.1.1.3.2.4.2s.2 0 .3-.1c.2-.1.4-.4.4-.7v-.9l-7.2-7.2c-.5.2-.8.8-.8 1.4zm8 2v-5.8c0-.3-.1-.5-.4-.7-.1 0-.2 0-.3 0s-.3 0-.4.2l-2.8 2.5-4.1-4.1-1 1 3.4 3.4 5.6 5.6 3.6 3.6 1-1z" fill-rule="evenodd"/></svg>';
     }
@@ -518,20 +531,20 @@ function createDownloadLink(blob, id) {
   buttonContainer.appendChild(muteButton);
 
   // create play/pause buttons (for "play" function go to hidden "playButton" below)
-  var playPauseButton = document.createElement('button');
+  var playPauseButton = document.createElement("button");
   playPauseButton.innerHTML =
     '<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
-  playPauseButton.className = 'wavesurfer-button play-pause-button btn btn-lg';
-  playPauseButton.title = 'Play';
-  playPauseButton.addEventListener('click', function () {
+  playPauseButton.className = "wavesurfer-button play-pause-button btn btn-lg";
+  playPauseButton.title = "Play";
+  playPauseButton.addEventListener("click", function () {
     if (wavesurfer.isPlaying()) {
       wavesurfer.pause();
-      playPauseButton.setAttribute('title', 'Play');
+      playPauseButton.setAttribute("title", "Play");
       playPauseButton.innerHTML =
         '<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
     } else {
       playButton.click();
-      playPauseButton.setAttribute('title', 'Pause');
+      playPauseButton.setAttribute("title", "Pause");
       playPauseButton.innerHTML =
         '<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor"	class="bi bi-pause-fill" viewBox="0 0 16 16"><path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z" /></svg>';
     }
@@ -539,14 +552,14 @@ function createDownloadLink(blob, id) {
   buttonContainer.appendChild(playPauseButton);
 
   // create hidden seperate play and pause buttons to control recordings
-  var playButton = document.createElement('button');
-  playButton.style.display = 'none';
-  playButton.innerHTML = 'Play';
+  var playButton = document.createElement("button");
+  playButton.style.display = "none";
+  playButton.innerHTML = "Play";
   playButton.speed = speed01;
   playButton.set_speed = 1.0;
   playButton.set_pitch = 1 / playButton.speed;
-  playButton.className = 'wavesurfer-button play-button';
-  playButton.addEventListener('click', function () {
+  playButton.className = "wavesurfer-button play-button";
+  playButton.addEventListener("click", function () {
     wavesurfer.setPlaybackRate(playButton.set_speed);
     //if (!soundtouchNode) {
     //	let filter = new window.soundtouch.SimpleFilter(source, st);
@@ -559,41 +572,41 @@ function createDownloadLink(blob, id) {
   });
   buttonContainer.appendChild(playButton);
 
-  var pauseButton = document.createElement('button');
-  pauseButton.style.display = 'none';
-  pauseButton.innerHTML = 'Pause';
-  pauseButton.className = 'wavesurfer-button btn btn-lg pause-button';
-  pauseButton.addEventListener('click', function () {
+  var pauseButton = document.createElement("button");
+  pauseButton.style.display = "none";
+  pauseButton.innerHTML = "Pause";
+  pauseButton.className = "wavesurfer-button btn btn-lg pause-button";
+  pauseButton.addEventListener("click", function () {
     wavesurfer.pause();
   });
   buttonContainer.appendChild(pauseButton);
 
   //create stop buttons
-  var stopButton = document.createElement('button');
+  var stopButton = document.createElement("button");
   stopButton.innerHTML =
     '<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="black" class="bi bi-skip-start-fill" viewBox="0 0 16 16"><path d="M4 4a.5.5 0 0 1 1 0v3.248l6.267-3.636c.54-.313 1.232.066 1.232.696v7.384c0 .63-.692 1.01-1.232.697L5 8.753V12a.5.5 0 0 1-1 0V4z" /></svg>';
-  stopButton.className = 'wavesurfer-button btn btn-lg stop-button';
-  stopButton.title = 'Stop';
+  stopButton.className = "wavesurfer-button btn btn-lg stop-button";
+  stopButton.title = "Stop";
 
-  stopButton.addEventListener('click', function () {
+  stopButton.addEventListener("click", function () {
     wavesurfer.stop();
     playPauseButton.innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
-    playPauseButton.title = 'Play';
+    playPauseButton.title = "Play";
   });
   buttonContainer.appendChild(stopButton);
 
   //create download buttons
-  var downloadButton = document.createElement('button');
+  var downloadButton = document.createElement("button");
   downloadButton.innerHTML =
     '<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" /><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z" /></svg>';
-  downloadButton.className = 'wavesurfer-button btn btn-lg wavesurfer-button';
-  downloadButton.setAttribute('title', 'Download');
-  downloadButton.addEventListener('click', function () {
+  downloadButton.className = "wavesurfer-button btn btn-lg wavesurfer-button";
+  downloadButton.setAttribute("title", "Download");
+  downloadButton.addEventListener("click", function () {
     // create a temporary link element to trigger the download
-    var tempLink = document.createElement('a');
+    var tempLink = document.createElement("a");
     var unique_filename = new Date().toISOString();
-    tempLink.download = unique_filename + '.wav';
+    tempLink.download = unique_filename + ".wav";
     tempLink.href = url;
     tempLink.click();
   });
@@ -637,29 +650,29 @@ function createDownloadLink(blob, id) {
   }
 
   //create delete buttons
-  var deleteButton = document.createElement('button');
+  var deleteButton = document.createElement("button");
   deleteButton.innerHTML =
     '<svg viewBox="0 0 24 24" fill="none" width="25" height="25" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M6 7V18C6 19.1046 6.89543 20 8 20H16C17.1046 20 18 19.1046 18 18V7M6 7H5M6 7H8M18 7H19M18 7H16M10 11V16M14 11V16M8 7V5C8 3.89543 8.89543 3 10 3H14C15.1046 3 16 3.89543 16 5V7M8 7H16" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>';
-  deleteButton.className = 'wavesurfer-button btn btn-lg delete-button';
-  deleteButton.setAttribute('title', 'Delete recording');
+  deleteButton.className = "wavesurfer-button btn btn-lg delete-button";
+  deleteButton.setAttribute("title", "Delete recording");
   deleteButton.dataset.collabId = id;
-  deleteButton.addEventListener('click', function (event) {
-    if (confirm('Are you sure you want to delete this recording?')) {
+  deleteButton.addEventListener("click", function (event) {
+    if (confirm("Are you sure you want to delete this recording?")) {
       deleteHandler(event);
     }
   });
   buttonContainer.appendChild(deleteButton);
 
-  var hiddenDeleteButton = document.createElement('button');
-  hiddenDeleteButton.classList.add('hidden-delete-btn');
-  hiddenDeleteButton.setAttribute('hidden', true);
-  hiddenDeleteButton.style.display = 'none';
+  var hiddenDeleteButton = document.createElement("button");
+  hiddenDeleteButton.classList.add("hidden-delete-btn");
+  hiddenDeleteButton.setAttribute("hidden", true);
+  hiddenDeleteButton.style.display = "none";
   hiddenDeleteButton.dataset.collabId = id;
-  hiddenDeleteButton.addEventListener('click', deleteHandler);
+  hiddenDeleteButton.addEventListener("click", deleteHandler);
   buttonContainer.appendChild(hiddenDeleteButton);
 
   // add the speed property to the wavesurfer instance
-  Object.defineProperty(wavesurfer, 'speed', {
+  Object.defineProperty(wavesurfer, "speed", {
     get: function () {
       return scrollContainer.speed;
     },
@@ -679,12 +692,12 @@ function combineSelected() {
   var length = 0;
   var maxRecLenth = 0;
   var noBuffers = 0;
-  var muteButtons = document.querySelectorAll('.mute-button');
+  var muteButtons = document.querySelectorAll(".mute-button");
   var selectedBuffers = [];
   for (var i = 0; i < muteButtons.length; i++) {
-    if (muteButtons[i].title == 'Mute') {
+    if (muteButtons[i].title == "Mute") {
       //console.log("Recording no",i+1," will be included in the mix");
-      combineSelectedButton.title = 'Mixing audio...';
+      combineSelectedButton.title = "Mixing audio...";
       noBuffers++;
       selectedBuffers.push(i);
     }
@@ -770,10 +783,10 @@ function dataToWave(Float32BitSampleArray) {
   function write16BitInt(index, val) {
     view.setUint16(index, val, true);
   }
-  writeStringIntoBuffer(0, 'RIFF');
+  writeStringIntoBuffer(0, "RIFF");
   write32BitInt(4, sizeOfFileDescriptor);
-  writeStringIntoBuffer(8, 'WAVE');
-  writeStringIntoBuffer(12, 'fmt ');
+  writeStringIntoBuffer(8, "WAVE");
+  writeStringIntoBuffer(12, "fmt ");
   write32BitInt(16, 16);
   write16BitInt(20, format);
   write16BitInt(22, numberOfChannels);
@@ -781,7 +794,7 @@ function dataToWave(Float32BitSampleArray) {
   write32BitInt(28, byteRate);
   write16BitInt(32, blockAlign);
   write16BitInt(34, bitsPerSample);
-  writeStringIntoBuffer(36, 'data');
+  writeStringIntoBuffer(36, "data");
   write32BitInt(40, totalDataSize);
 
   //console.log("view=",view); // to view file size to be filled with audio data and check if correct
@@ -794,12 +807,12 @@ function dataToWave(Float32BitSampleArray) {
       Math.max(-1, Math.min(1, Float32BitSampleArray[i])) * 0x7fffffff;
     dataView.setInt32(byteOffset, intSample, true);
   }
-  var mixBlob = new Blob([view], { type: 'audio/wav' });
+  var mixBlob = new Blob([view], { type: "audio/wav" });
   //console.log("vmixBlob=",mixBlob);
   const url = URL.createObjectURL(mixBlob); // Create a link to download the file
-  var tempLink = document.createElement('a');
+  var tempLink = document.createElement("a");
   var unique_filename = new Date().toISOString();
-  tempLink.download = unique_filename + '.wav';
+  tempLink.download = unique_filename + ".wav";
   tempLink.href = url;
   tempLink.click();
 }
@@ -814,12 +827,12 @@ function readSingleFile(e) {
     return;
   }
   var reader = new FileReader();
-  waveform0Container.removeAttribute('hidden');
-  timeline0Container.removeAttribute('hidden');
-  controls0Container.removeAttribute('hidden');
-  stopButton0.removeAttribute('hidden');
-  playPauseButton0.removeAttribute('hidden');
-  muteButton0.removeAttribute('hidden');
+  waveform0Container.removeAttribute("hidden");
+  timeline0Container.removeAttribute("hidden");
+  controls0Container.removeAttribute("hidden");
+  stopButton0.removeAttribute("hidden");
+  playPauseButton0.removeAttribute("hidden");
+  muteButton0.removeAttribute("hidden");
   reader.onload = function (e) {
     var contents = e.target.result;
     wavesurfer0.loadArrayBuffer(contents);
@@ -831,34 +844,34 @@ function readSingleFile(e) {
 // Load a file from url
 function loadUrlFile(e) {
   var reader = new FileReader();
-  waveform0Container.removeAttribute('hidden');
-  timeline0Container.removeAttribute('hidden');
-  controls0Container.removeAttribute('hidden');
-  stopButton0.removeAttribute('hidden');
-  playPauseButton0.removeAttribute('hidden');
-  muteButton0.removeAttribute('hidden');
+  waveform0Container.removeAttribute("hidden");
+  timeline0Container.removeAttribute("hidden");
+  controls0Container.removeAttribute("hidden");
+  stopButton0.removeAttribute("hidden");
+  playPauseButton0.removeAttribute("hidden");
+  muteButton0.removeAttribute("hidden");
   //console.log("file = ",e);
   wavesurfer0.load(
     `https://musicolab.hmu.gr/apprepository/downloadPublicFile.php?f=${e}`
   );
   reader.onload = function (e) {
     var contents = e.target.result;
-    console.log('contents =', contents);
+    console.log("contents =", contents);
     wavesurfer0.loadArrayBuffer(contents);
     displayContents(contents);
   };
 }
 
 function playpauseAll() {
-  if (playPauseAllButton.getAttribute('title') === 'Play all') {
+  if (playPauseAllButton.getAttribute("title") === "Play all") {
     //console.log("playPauseAllButton (PLAY) clicked");
     //console.log("Play ALL");
-    playPauseAllButton.setAttribute('title', 'Pause all');
+    playPauseAllButton.setAttribute("title", "Pause all");
     playAll();
   } else {
     pauseAll();
     //console.log("Pause ALL");
-    playPauseAllButton.setAttribute('title', 'Play all');
+    playPauseAllButton.setAttribute("title", "Play all");
   }
 }
 
@@ -867,9 +880,9 @@ function playAll() {
   //console.log("playPauseAllButton (PLAY) clicked");
   playPauseAllButton.innerHTML =
     '<svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="currentColor" class="bi bi-pause-fill" viewBox="0 0 16 16"><path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z" /></svg>';
-  playPauseAllButton.title = 'Pause all';
-  var playButtons = document.querySelectorAll('.play-button');
-  var playPauseButtons = document.querySelectorAll('.play-pause-button');
+  playPauseAllButton.title = "Pause all";
+  var playButtons = document.querySelectorAll(".play-button");
+  var playPauseButtons = document.querySelectorAll(".play-pause-button");
   //console.log("now, I will click all play buttons");
   //console.log("playButtons.length = ",playButtons.length);
   for (var i = 0; i < playButtons.length; i++) {
@@ -877,10 +890,10 @@ function playAll() {
     playButtons[i].click();
     playPauseButtons[i].innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor"	class="bi bi-pause-fill" viewBox="0 0 16 16"><path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z" /></svg>';
-    playPauseButtons[i].setAttribute('title', 'Pause');
+    playPauseButtons[i].setAttribute("title", "Pause");
     playPauseButton0.innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="currentColor" class="bi bi-pause-fill" viewBox="0 0 16 16"><path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z" /></svg>';
-    playPauseButton0.setAttribute('title', 'Pause');
+    playPauseButton0.setAttribute("title", "Pause");
   }
 
   if (wavesurfer0.getCurrentTime() === 0) {
@@ -896,10 +909,10 @@ function pauseAll() {
   //console.log("playPauseAllButton (PAUSE) clicked");
   playPauseAllButton.innerHTML =
     '<svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
-  playPauseAllButton.title = 'Play all';
+  playPauseAllButton.title = "Play all";
   pauseButton0.click();
-  var playPauseButtons = document.querySelectorAll('.play-pause-button');
-  var pauseButtons = document.querySelectorAll('.pause-button');
+  var playPauseButtons = document.querySelectorAll(".play-pause-button");
+  var pauseButtons = document.querySelectorAll(".pause-button");
   //console.log("now I will click all play buttons");
   //console.log("pauseButtons.length = ",pauseButtons.length);
   for (var i = 0; i < pauseButtons.length; i++) {
@@ -907,10 +920,10 @@ function pauseAll() {
     pauseButtons[i].click();
     playPauseButtons[i].innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
-    playPauseButtons[i].setAttribute('title', 'Play');
+    playPauseButtons[i].setAttribute("title", "Play");
     playPauseButton0.innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
-    playPauseButton0.setAttribute('title', 'Play');
+    playPauseButton0.setAttribute("title", "Play");
   }
 }
 
@@ -918,11 +931,11 @@ function stopAll() {
   //console.log("stopAllButton clicked");
   playPauseAllButton.innerHTML =
     '<svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
-  playPauseAllButton.title = 'Play all';
+  playPauseAllButton.title = "Play all";
   stopButton0.click();
-  var stopButtons = document.querySelectorAll('.stop-button');
-  var playButtons = document.querySelectorAll('.play-button');
-  var playPauseButtons = document.querySelectorAll('.play-pause-button');
+  var stopButtons = document.querySelectorAll(".stop-button");
+  var playButtons = document.querySelectorAll(".play-button");
+  var playPauseButtons = document.querySelectorAll(".play-pause-button");
   //console.log("click all stop buttons")
   //console.log("stopButtons.length = ",stopButtons.length);
   for (var i = 0; i < stopButtons.length; i++) {
@@ -930,32 +943,32 @@ function stopAll() {
     stopButtons[i].click();
     playButtons[i].innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
-    playButtons[i].setAttribute('title', 'Play');
+    playButtons[i].setAttribute("title", "Play");
     playPauseButtons[i].innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
-    playPauseButtons[i].setAttribute('title', 'Play');
+    playPauseButtons[i].setAttribute("title", "Play");
   }
 }
 
 function displayContents(contents) {
-  var element = document.getElementById('file-content');
+  var element = document.getElementById("file-content");
   element.textContent = contents;
 }
 
 document
-  .getElementById('file-input')
-  .addEventListener('change', readSingleFile, false);
+  .getElementById("file-input")
+  .addEventListener("change", readSingleFile, false);
 
 // Init & load audio file
-document.addEventListener('DOMContentLoaded', function () {
-  let playPauseButton0 = document.querySelector('#playPauseButton0'),
-    muteButton0 = document.querySelector('#muteButton0'),
-    stopButton0 = document.querySelector('#stopButton0'),
+document.addEventListener("DOMContentLoaded", function () {
+  let playPauseButton0 = document.querySelector("#playPauseButton0"),
+    muteButton0 = document.querySelector("#muteButton0"),
+    stopButton0 = document.querySelector("#stopButton0"),
     selectedfile = document
-      .getElementById('file-input')
-      .addEventListener('change', readSingleFile, false);
+      .getElementById("file-input")
+      .addEventListener("change", readSingleFile, false);
   wavesurfer0 = WaveSurfer.create({
-    container: document.querySelector('#waveform0'),
+    container: document.querySelector("#waveform0"),
     height: 50,
     scrollParent: true,
     plugins: [
@@ -963,20 +976,20 @@ document.addEventListener('DOMContentLoaded', function () {
         showTime: true,
         opacity: 1,
         customShowTimeStyle: {
-          'background-color': '#555',
-          color: '#0f5',
-          padding: '2px',
-          'font-size': '10px',
+          "background-color": "#555",
+          color: "#0f5",
+          padding: "2px",
+          "font-size": "10px",
         },
       }),
       WaveSurfer.timeline.create({
-        container: document.querySelector('#timeline0'), // specify the container for the timeline
+        container: document.querySelector("#timeline0"), // specify the container for the timeline
         height: 20, // specify the height of the timeline
       }),
     ],
   });
 
-  wavesurfer0.on('error', function (e) {
+  wavesurfer0.on("error", function (e) {
     console.warn(e);
   });
   // Load audio from URL
@@ -991,7 +1004,7 @@ document.addEventListener('DOMContentLoaded', function () {
     console.log('Missing "f" parameter in URL, no audio file loaded');
   }
 
-  wavesurfer0.on('ready', function () {
+  wavesurfer0.on("ready", function () {
     let st = new window.soundtouch.SoundTouch(
       wavesurfer0.backend.ac.sampleRate
     );
@@ -1020,7 +1033,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let soundtouchNode;
 
-    wavesurfer0.on('play', function () {
+    wavesurfer0.on("play", function () {
       seekingPos = ~~(wavesurfer0.backend.getPlayedPercents() * length);
       st.tempo = wavesurfer0.getPlaybackRate();
 
@@ -1039,26 +1052,26 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
 
-    wavesurfer0.on('pause', function () {
+    wavesurfer0.on("pause", function () {
       soundtouchNode && soundtouchNode.disconnect();
     });
 
-    wavesurfer0.on('seek', function () {
+    wavesurfer0.on("seek", function () {
       seekingPos = ~~(wavesurfer0.backend.getPlayedPercents() * length);
     });
   });
 
   // Play-pause button
   playPauseButton0.onclick = function () {
-    console.log('speed01 =', speed01);
+    console.log("speed01 =", speed01);
     wavesurfer0.setPlaybackRate(speed01);
     wavesurfer0.playPause();
     if (wavesurfer0.isPlaying()) {
-      playPauseButton0.setAttribute('title', 'Pause');
+      playPauseButton0.setAttribute("title", "Pause");
       playPauseButton0.innerHTML =
         '<svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="currentColor" class="bi bi-pause-fill" viewBox="0 0 16 16"><path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z" /></svg>';
     } else {
-      playPauseButton0.setAttribute('title', 'Play');
+      playPauseButton0.setAttribute("title", "Play");
       playPauseButton0.innerHTML =
         '<svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
     }
@@ -1078,12 +1091,12 @@ document.addEventListener('DOMContentLoaded', function () {
     //wavesurfer0.toggleMute();
     if (wavesurfer0.getMute()) {
       wavesurfer0.setMute(false);
-      muteButton0.setAttribute('title', 'Mute');
+      muteButton0.setAttribute("title", "Mute");
       muteButton0.innerHTML =
         '<svg fill="#000000" width="45" height="45" viewBox="-2.5 0 19 19" xmlns="http://www.w3.org/2000/svg" class="cf-icon-svg"><path d="M7.365 4.785v9.63c0 .61-.353.756-.784.325l-2.896-2.896H1.708A1.112 1.112 0 0 1 .6 10.736V8.464a1.112 1.112 0 0 1 1.108-1.108h1.977L6.581 4.46c.43-.43.784-.285.784.325zm2.468 7.311a3.53 3.53 0 0 0 0-4.992.554.554 0 0 0-.784.784 2.425 2.425 0 0 1 0 3.425.554.554 0 1 0 .784.783zm1.791 1.792a6.059 6.059 0 0 0 0-8.575.554.554 0 1 0-.784.783 4.955 4.955 0 0 1 0 7.008.554.554 0 1 0 .784.784z"/></svg>';
     } else {
       wavesurfer0.setMute(true);
-      muteButton0.setAttribute('title', 'Unmute');
+      muteButton0.setAttribute("title", "Unmute");
       muteButton0.innerHTML =
         '<svg fill="#000000" width="45" height="45" viewBox="0 0 19 19" xmlns="http://www.w3.org/2000/svg"><path clip-rule="evenodd" d="m2 7.5v3c0 .8.6 1.5 1.4 1.5h2.3l3.2 2.8c.1.1.3.2.4.2s.2 0 .3-.1c.2-.1.4-.4.4-.7v-.9l-7.2-7.2c-.5.2-.8.8-.8 1.4zm8 2v-5.8c0-.3-.1-.5-.4-.7-.1 0-.2 0-.3 0s-.3 0-.4.2l-2.8 2.5-4.1-4.1-1 1 3.4 3.4 5.6 5.6 3.6 3.6 1-1z" fill-rule="evenodd"/></svg>';
     }
@@ -1091,24 +1104,9 @@ document.addEventListener('DOMContentLoaded', function () {
   // Stop button
   stopButton0.onclick = function () {
     wavesurfer0.stop();
-    playPauseButton0.setAttribute('title', 'Play');
+    playPauseButton0.setAttribute("title", "Play");
     playPauseButton0.innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
   };
 });
 
-/*
-// countdown section ///////////////////////////////////////////////////////
-function countdown() {
-	let count = 0;
-	let interval = setInterval(function() {
-		if (count >= 4) {
-			clearInterval(interval);
-		return;
-		}
-	audio.currentTime = 0;
-	audio.play();
-	count++;
-	}, 1000);
-}
-*/
