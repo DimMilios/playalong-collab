@@ -8,6 +8,7 @@ const urlParams = new URLSearchParams(window.location.search);
 const fileParam = urlParams.get("f");
 const userParam = urlParams.get("u");
 const courseParam = urlParams.get("course");
+const collabParam = urlParams.get("collab");
 
 var firstWaveform = true;
 var gumStream; //stream from getUserMedia()
@@ -38,6 +39,10 @@ if (courseParam) {
 }
 var roomNameInput = document.querySelector("#meet-room");
 roomNameInput.value = Jitsi_Course_Name;
+var Collab = false;
+if (!!collabParam && courseParam !== null) {
+  Collab = true;
+}
 
 var recordedBlobs = []; // Array to hold all the recorded blobs
 var selectedBlobs = []; // Array to hold all blobs to be mixed
@@ -115,26 +120,47 @@ function setPlaybackSpeed(s) {
   speed01 = s / 100;
   window.speed01 = speed01;
   var t = window.tempo;
-  console.log("tempo =", t * speed01);
+  //console.log("tempo =", t * speed01);
   parent.metronome.setTempo(t);
-  console.log("speed=", speed);
-  console.log("speed01=", speed01);
+  //console.log("speed=", speed);
+  //console.log("speed01=", speed01);
   var playButtons = document.querySelectorAll(".play-button");
-  console.log("recordings count:", playButtons.length);
+  //console.log("recordings count:", playButtons.length);
   for (var i = 0; i < playButtons.length; i++) {
-    console.log("recording speed", i + 1, "was", playButtons[i].speed);
-    console.log("desired speed", i + 1, " is", speed / 100);
+    //console.log("recording speed", i + 1, "was", playButtons[i].speed);
+    //console.log("desired speed", i + 1, " is", speed / 100);
     playButtons[i].set_speed = speed01 / playButtons[i].speed;
-    console.log("multiply by", playButtons[i].set_speed, "to achieve this");
+    //console.log("multiply by", playButtons[i].set_speed, "to achieve this");
     //var finalspeed = playButtons[i].set_speed*playButtons[i].speed;
     //console.log("speed",i+1,"=",finalspeed);
   }
 }
 
+const speedValueElem = document.getElementById("speedValue");
+const speedSliderElem = document.getElementById("speedSlider");
+
 function setSpeed(s) {
   setPlaybackSpeed(s);
-  document.getElementById("speedValue").innerHTML = s + " %";
+  speedValueElem.innerHTML = s + " %";
+  window.playerConfig.set("playbackSpeed", s);
 }
+
+function setSpeedRemote(s) {
+  setPlaybackSpeed(s);
+  speedValueElem.innerHTML = s + " %";
+  speedSliderElem.value = +s;
+  speedValueElem.animate(speedValueKeyFrames, speedValueTiming);
+}
+
+const speedValueKeyFrames = [
+  { opacity: 1, transform: "translateY(-10px)", offset: 0 },
+  { opacity: 0.2, transform: "translateY(5px)", offset: 0.5 },
+  { opacity: 1, transform: "translateY(0px)", offset: 1 },
+];
+const speedValueTiming = { duration: 600, iterations: 1, easing: "ease-out" };
+speedSliderElem?.addEventListener("change", () => {
+  speedValueElem.animate(speedValueKeyFrames, speedValueTiming);
+});
 
 // recording section ///////////////////////////////////////////////////////
 function startRecording() {
@@ -344,32 +370,32 @@ function stopRecording() {
   rec.getBuffer(function (buffer) {
     recordedBuffers.push(buffer); //push the buffer to an array
     console.log("recordedBuffers = ", recordedBuffers);
-
-    // Yjs only accepts UInt8Array types
-    // let arrayBuffer = buffer[0].buffer;
-    // window.sharedRecordedBlobs.push([
-    //   {
-    //     clientId: window.awareness.clientID,
-    //     data: new Uint8Array(arrayBuffer),
-    //   },
-    // ]);
   });
   //create the wav blob and pass it on to createDownloadLink
-  // rec.exportWAV(createDownloadLink);
+
+  if (!Collab) {
+    rec.exportWAV(createDownloadLink);
+  }
 
   rec.exportWAV(function (blob) {
     recordedBlobs.push(blob);
     console.log("recordedBlobs", recordedBlobs);
 
     // Yjs only accepts UInt8Array types
-    blob.arrayBuffer().then((binaryData) => {
-      window.sharedRecordedBlobs.push([
-        {
-          id: Math.random().toString(36).slice(-6),
-          data: new Uint8Array(binaryData),
-        },
-      ]);
-    });
+    if (!!Collab && window.sharedRecordedBlobs != null) {
+      blob.arrayBuffer().then((binaryData) => {
+        let id = "";
+        for (let num of crypto.getRandomValues(new Uint8Array(8))) {
+          id += num.toString(16);
+        }
+        window.sharedRecordedBlobs.push([
+          {
+            id,
+            data: new Uint8Array(binaryData),
+          },
+        ]);
+      });
+    }
   });
   //recordedBuffers.forEach(buffer => {
   //	console.log("length",buffer.byteLength);
@@ -1109,4 +1135,3 @@ document.addEventListener("DOMContentLoaded", function () {
       '<svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
   };
 });
-
