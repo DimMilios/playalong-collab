@@ -388,15 +388,12 @@ function stopRecording() {
         for (let num of crypto.getRandomValues(new Uint8Array(8))) {
           id += num.toString(16);
         }
-        window.sharedRecordedBlobs.push([
-          {
-            id,
-            data: new Uint8Array(binaryData),
-          },
-        ]);
+        const uint8Data = new Uint8Array(binaryData);
+        window.sharedRecordedBlobs.push([{ id, data: uint8Data }]);
       });
     }
   });
+
   //recordedBuffers.forEach(buffer => {
   //	console.log("length",buffer.byteLength);
   //});
@@ -683,7 +680,7 @@ function createDownloadLink(blob, id) {
   deleteButton.setAttribute("title", "Delete recording");
   deleteButton.dataset.collabId = id;
   deleteButton.addEventListener("click", function (event) {
-    if (confirm("Are you sure you want to delete this recording?")) {
+    if (window.confirm("This track will be deleted for everyone. Are you sure you want to continue?")) {
       deleteHandler(event);
     }
   });
@@ -984,6 +981,28 @@ function displayContents(contents) {
 document
   .getElementById("file-input")
   .addEventListener("change", readSingleFile, false);
+
+function showHiddenButtons() {
+  playPauseAllButton.hidden = false;
+  playPauseAllButton.setAttribute("title", "Play all");
+  playPauseAllButton.innerHTML =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
+
+  stopAllButton.hidden = false;
+  combineSelectedButton.hidden = false;
+}
+
+function initBuffers() {
+  console.log("initializing buffers");
+  for (let { data } of window.sharedRecordedBlobs) {
+    let blob = new Blob([data]);
+    recordedBlobs.push(blob);
+
+    blob.arrayBuffer().then((buffer) => {
+      recordedBuffers.push([new Float32Array(buffer)]);
+    });
+  }
+}
 
 // Init & load audio file
 document.addEventListener("DOMContentLoaded", function () {

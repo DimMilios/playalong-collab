@@ -2,21 +2,20 @@ import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 
 const isSecure = (protocol = "https") => {
-    return window.location.protocol.includes(protocol);
+  return window.location.protocol.includes(protocol);
 };
 
 const productionOrigin = "musicolab.hmu.gr:8080/";
 const baseUrl = import.meta.env.DEV
-    ? "http://localhost:8080/"
-    : `${isSecure() ? "https" : "http"}://${productionOrigin}`;
+  ? "http://localhost:8080/"
+  : `${isSecure() ? "https" : "http"}://${productionOrigin}`;
 
 const wsBaseUrl = import.meta.env.DEV
-    ? "ws://localhost:8080"
-    : `${isSecure() ? "wss" : "ws"}://${productionOrigin}`;
+  ? "ws://localhost:8080"
+  : `${isSecure() ? "wss" : "ws"}://${productionOrigin}`;
 
 function setupCollaboration() {
   const ydoc = new Y.Doc();
-
 
   const websocketProvider = new WebsocketProvider(wsBaseUrl, "musicolab", ydoc);
   websocketProvider.on("status", (event) => {
@@ -27,20 +26,28 @@ function setupCollaboration() {
       document.title = document.title.replace("🟢", "🔴");
     }
   });
+
+  websocketProvider.on("synced", () => {
+    // Show hidden buttons if shared recorded blobs exist
+    if (sharedRecordedBlobs.length > 0) {
+      console.log("showing hidden button");
+      window.showHiddenButtons();
+      window.initBuffers();
+    }
+  });
   window.websocketProvider = websocketProvider;
   window.awareness = websocketProvider.awareness;
 
   const sharedRecordedBlobs = ydoc.getArray("blobs");
   sharedRecordedBlobs.observe((event) => {
-    // console.log('Received YArray event', event);
-
     for (let i = 0; i < event.changes.delta.length; i++) {
       let delta = event.changes.delta[i];
-      // change.insert[0].client !== websocketProvider.awareness.clientID &&
       if (Array.isArray(delta.insert)) {
+        console.log("creating wavesurfer");
         for (let insert of delta.insert) {
           let blob = new Blob([insert.data]);
           window.createDownloadLink(blob, insert.id);
+          window.showHiddenButtons();
         }
       }
     }
