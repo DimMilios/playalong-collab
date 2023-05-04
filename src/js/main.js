@@ -17,7 +17,9 @@ const wsBaseUrl = import.meta.env.DEV
 function setupCollaboration() {
   const ydoc = new Y.Doc();
 
-  const websocketProvider = new WebsocketProvider(wsBaseUrl, "musicolab", ydoc);
+  const room = urlParams.get("f") ?? "musicolab";
+
+  const websocketProvider = new WebsocketProvider(wsBaseUrl, room, ydoc);
   websocketProvider.on("status", (event) => {
     console.log(event.status);
     if (event.status === "connected") {

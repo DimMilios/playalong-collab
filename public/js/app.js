@@ -6,7 +6,7 @@ URL = window.URL || window.webkitURL;
 // Get the value of the 'f' parameter from the URL
 const urlParams = new URLSearchParams(window.location.search);
 const fileParam = urlParams.get("f");
-const userParam = urlParams.get("u");
+const userParam = urlParams.get("user");
 const courseParam = urlParams.get("course");
 const collabParam = urlParams.get("collab");
 
