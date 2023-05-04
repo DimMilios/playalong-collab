@@ -83,6 +83,20 @@ function setupCollaboration() {
     }
   });
 
+  websocketProvider.awareness.on('update', () => {
+    const aw = Array.from(websocketProvider.awareness.getStates());
+    for (let [clientId, state] of aw) {
+      if (clientId !== websocketProvider.awareness.clientID && !urlParams.has('f') && state.backingTrack != null) {
+        window.fileParam = state.backingTrack; 
+	const url = new URL(location);
+        url.searchParams.set("f", state.backingTrack);
+        urlParams.set("f", state.backingTrack);
+        history.pushState({}, "", url);
+	window.loadUrlFile(state.backingTrack);
+      }
+    }
+  });
+
   window.ydoc = ydoc;
   window.sharedRecordedBlobs = sharedRecordedBlobs;
   window.deletedSharedRecordedBlobIds = deletedSharedRecordedBlobIds;

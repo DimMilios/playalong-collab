@@ -879,10 +879,20 @@ function loadUrlFile(e) {
   stopButton0.removeAttribute("hidden");
   playPauseButton0.removeAttribute("hidden");
   muteButton0.removeAttribute("hidden");
-  //console.log("file = ",e);
-  wavesurfer0.load(
-    `https://musicolab.hmu.gr/apprepository/downloadPublicFile.php?f=${e}`
-  );
+  console.log("file = ",e);
+  const request = wavesurfer0.load( `https://musicolab.hmu.gr/apprepository/downloadPublicFile.php?f=${e}`);
+
+  wavesurfer0.on('ready', () => {
+    const length = +request.response.headers.get('Content-Length')
+    const type = request.response.headers.get('Content-Type')
+
+    if (length > 30 && !type.startsWith("text/html")) {
+      window.awareness?.setLocalStateField("backingTrack", e);
+    } else {
+      window.awareness?.setLocalStateField("backingTrack", null);
+    }
+  });
+
   reader.onload = function (e) {
     var contents = e.target.result;
     console.log("contents =", contents);
