@@ -49,7 +49,7 @@ var selectedBlobs = []; // Array to hold all blobs to be mixed
 var recordedBuffers = []; // Array to hold all PCM audio recordings
 var selectedBuffers = []; // Array to hold all PCM audio recordings to be mixed
 var noRecordings = 0; // Holds how many are the audio recordings
-var sampleRate; // this will hold the sample rate used for recordings
+var sampleRate = 48000; // this will hold the sample rate used for recordings
 
 // var audio = new Audio('audio/metronome.wav');
 // Set the tempo (in beats per minute)
@@ -142,7 +142,7 @@ const speedSliderElem = document.getElementById("speedSlider");
 function setSpeed(s) {
   setPlaybackSpeed(s);
   speedValueElem.innerHTML = s + " %";
-  window.playerConfig.set("playbackSpeed", s);
+  window.playerConfig?.set("playbackSpeed", s);
 }
 
 function setSpeedRemote(s) {
@@ -370,8 +370,14 @@ function stopRecording() {
   rec.getBuffer(function (buffer) {
     recordedBuffers.push(buffer); //push the buffer to an array
     console.log("recordedBuffers = ", recordedBuffers);
+
+    if (!!Collab && window.sharedRecordedBlobs != null) {
+      // const data = new Uint8Array(buffer[0].buffer);
+
+      const data = Array.from(buffer[0]);
+      window.sharedRecordedBlobs.push([{ id: generateID(), data }]);
+    }
   });
-  //create the wav blob and pass it on to createDownloadLink
 
   if (!Collab) {
     rec.exportWAV(createDownloadLink);
@@ -380,18 +386,6 @@ function stopRecording() {
   rec.exportWAV(function (blob) {
     recordedBlobs.push(blob);
     console.log("recordedBlobs", recordedBlobs);
-
-    // Yjs only accepts UInt8Array types
-    if (!!Collab && window.sharedRecordedBlobs != null) {
-      blob.arrayBuffer().then((binaryData) => {
-        let id = "";
-        for (let num of crypto.getRandomValues(new Uint8Array(8))) {
-          id += num.toString(16);
-        }
-        const uint8Data = new Uint8Array(binaryData);
-        window.sharedRecordedBlobs.push([{ id, data: uint8Data }]);
-      });
-    }
   });
 
   //recordedBuffers.forEach(buffer => {
@@ -399,6 +393,14 @@ function stopRecording() {
   //});
 }
 // end recording section ///////////////////////////////////////////////////////
+
+function generateID() {
+  let id = [];
+  for (let num of window.crypto.getRandomValues(new Uint8Array(8))) {
+    id.push(num.toString(16));
+  }
+  return id.join("");
+}
 
 function createDownloadLink(blob, id) {
   var url = URL.createObjectURL(blob);
@@ -465,6 +467,9 @@ function createDownloadLink(blob, id) {
   //});
 
   //let soundtouchNode;
+  wavesurfer.on("error", (err) => {
+    console.error("wavesurfer error:", err);
+  });
 
   wavesurfer.on("ready", function () {
     let st = new window.soundtouch.SoundTouch(wavesurfer.backend.ac.sampleRate);
@@ -646,17 +651,12 @@ function createDownloadLink(blob, id) {
     buttonContainer.parentNode.removeChild(buttonContainer);
     scrollContainer.remove();
 
-    if (event.currentTarget.dataset.collabId) {
+    if (!!Collab && event.currentTarget.dataset.collabId) {
       let indexToDelete = -1;
-      let yarray = window.sharedRecordedBlobs.toArray();
-      for (let i = 0; i < yarray.length; i++) {
-        console.log({
-          elemCollabId: deleteButton.dataset.collabId,
-          collabId: yarray[i],
-        });
+      for (let i = 0; i < window.sharedRecordedBlobs.length; i++) {
         if (
-          window.awareness.clientID === window.ydoc.clientID &&
-          yarray[i]?.id === deleteButton.dataset.collabId
+          window.sharedRecordedBlobs.get(i)?.id ===
+          deleteButton.dataset.collabId
         ) {
           indexToDelete = i;
         }
@@ -680,7 +680,8 @@ function createDownloadLink(blob, id) {
   deleteButton.setAttribute("title", "Delete recording");
   deleteButton.dataset.collabId = id;
   deleteButton.addEventListener("click", function (event) {
-    if (window.confirm("This track will be deleted for everyone. Are you sure you want to continue?")) {
+    // prettier-ignore
+    if (window.confirm("This track will be removed for everyone. Are you sure you want to delete it?")) {
       deleteHandler(event);
     }
   });
@@ -781,7 +782,7 @@ function mixAudioBuffers(buffers, length) {
 	*/
 }
 
-function dataToWave(Float32BitSampleArray) {
+function recordingToBlob(Float32BitSampleArray) {
   // https://gist.github.com/meziantou/edb7217fddfbb70e899e
   // https://stackoverflow.com/questions/73891141/should-i-convert-32-bit-float-audio-samples-into-a-16-bit-pcm-data-wav-file-in-m
   var dataTypeSize = 32, // 32 bit PCM data
@@ -795,6 +796,7 @@ function dataToWave(Float32BitSampleArray) {
     buffer = new ArrayBuffer(44 + totalDataSize),
     view = new DataView(buffer),
     format = 1;
+
   function writeStringIntoBuffer(index, str) {
     for (let i = 0; i < str.length; i++) {
       view.setUint8(index + i, str.charCodeAt(i));
@@ -820,7 +822,7 @@ function dataToWave(Float32BitSampleArray) {
   writeStringIntoBuffer(36, "data");
   write32BitInt(40, totalDataSize);
 
-  //console.log("view=",view); // to view file size to be filled with audio data and check if correct
+  // console.log("view=",view); // to view file size to be filled with audio data and check if correct
 
   // Write audio data
   const dataView = new DataView(buffer, 44);
@@ -830,14 +832,18 @@ function dataToWave(Float32BitSampleArray) {
       Math.max(-1, Math.min(1, Float32BitSampleArray[i])) * 0x7fffffff;
     dataView.setInt32(byteOffset, intSample, true);
   }
-  var mixBlob = new Blob([view], { type: "audio/wav" });
-  //console.log("vmixBlob=",mixBlob);
-  const url = URL.createObjectURL(mixBlob); // Create a link to download the file
-  var tempLink = document.createElement("a");
-  var unique_filename = new Date().toISOString();
-  tempLink.download = unique_filename + ".wav";
-  tempLink.href = url;
-  tempLink.click();
+  return new Blob([view], { type: "audio/wav" });
+}
+
+function dataToWave(Float32BitSampleArray) {
+    var mixBlob = recordingToBlob(Float32BitSampleArray);
+    //console.log("vmixBlob=",mixBlob);
+    const url = URL.createObjectURL(mixBlob); // Create a link to download the file
+    var tempLink = document.createElement("a");
+    var unique_filename = new Date().toISOString();
+    tempLink.download = unique_filename + ".wav";
+    tempLink.href = url;
+    tempLink.click();
 }
 
 // Create an instance of wavesurfer for the audio file to be followed
@@ -990,18 +996,6 @@ function showHiddenButtons() {
 
   stopAllButton.hidden = false;
   combineSelectedButton.hidden = false;
-}
-
-function initBuffers() {
-  console.log("initializing buffers");
-  for (let { data } of window.sharedRecordedBlobs) {
-    let blob = new Blob([data]);
-    recordedBlobs.push(blob);
-
-    blob.arrayBuffer().then((buffer) => {
-      recordedBuffers.push([new Float32Array(buffer)]);
-    });
-  }
 }
 
 // Init & load audio file

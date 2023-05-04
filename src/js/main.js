@@ -30,9 +30,7 @@ function setupCollaboration() {
   websocketProvider.on("synced", () => {
     // Show hidden buttons if shared recorded blobs exist
     if (sharedRecordedBlobs.length > 0) {
-      console.log("showing hidden button");
       window.showHiddenButtons();
-      window.initBuffers();
     }
   });
   window.websocketProvider = websocketProvider;
@@ -43,11 +41,15 @@ function setupCollaboration() {
     for (let i = 0; i < event.changes.delta.length; i++) {
       let delta = event.changes.delta[i];
       if (Array.isArray(delta.insert)) {
-        console.log("creating wavesurfer");
+
         for (let insert of delta.insert) {
-          let blob = new Blob([insert.data]);
-          window.createDownloadLink(blob, insert.id);
-          window.showHiddenButtons();
+            // Turn JS array into Float32Array
+            const f32Array = Float32Array.from(insert.data);
+            if (!event.transaction.local) {
+              window.recordedBuffers.push([f32Array]);
+            }
+            const blob = window.recordingToBlob(f32Array);
+            window.createDownloadLink(blob, insert.id);
         }
       }
     }
