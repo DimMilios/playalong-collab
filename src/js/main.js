@@ -17,7 +17,9 @@ const wsBaseUrl = import.meta.env.DEV
 function setupCollaboration() {
   const ydoc = new Y.Doc();
 
-  const room = urlParams.get("f") ?? "musicolab";
+  const file = urlParams.get("f") ?? "musicolab_default";
+  const course = urlParams.get("course") ?? "musicolab_default";
+  const room = `${file}::${course}`;
 
   const websocketProvider = new WebsocketProvider(wsBaseUrl, room, ydoc);
   websocketProvider.on("status", (event) => {
@@ -43,15 +45,14 @@ function setupCollaboration() {
     for (let i = 0; i < event.changes.delta.length; i++) {
       let delta = event.changes.delta[i];
       if (Array.isArray(delta.insert)) {
-
         for (let insert of delta.insert) {
-            // Turn JS array into Float32Array
-            const f32Array = Float32Array.from(insert.data);
-            if (!event.transaction.local) {
-              window.recordedBuffers.push([f32Array]);
-            }
-            const blob = window.recordingToBlob(f32Array);
-            window.createDownloadLink(blob, insert.id);
+          // Turn JS array into Float32Array
+          const f32Array = Float32Array.from(insert.data);
+          if (!event.transaction.local) {
+            window.recordedBuffers.push([f32Array]);
+          }
+          const blob = window.recordingToBlob(f32Array);
+          window.createDownloadLink(blob, insert.id);
         }
       }
     }
@@ -81,20 +82,6 @@ function setupCollaboration() {
           break;
         default:
           console.warn("unsupported configuration variable: ", key);
-      }
-    }
-  });
-
-  websocketProvider.awareness.on('update', () => {
-    const aw = Array.from(websocketProvider.awareness.getStates());
-    for (let [clientId, state] of aw) {
-      if (clientId !== websocketProvider.awareness.clientID && !urlParams.has('f') && state.backingTrack != null) {
-        window.fileParam = state.backingTrack; 
-	const url = new URL(location);
-        url.searchParams.set("f", state.backingTrack);
-        urlParams.set("f", state.backingTrack);
-        history.pushState({}, "", url);
-	window.loadUrlFile(state.backingTrack);
       }
     }
   });

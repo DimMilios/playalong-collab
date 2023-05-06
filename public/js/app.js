@@ -836,14 +836,14 @@ function recordingToBlob(Float32BitSampleArray) {
 }
 
 function dataToWave(Float32BitSampleArray) {
-    var mixBlob = recordingToBlob(Float32BitSampleArray);
-    //console.log("vmixBlob=",mixBlob);
-    const url = URL.createObjectURL(mixBlob); // Create a link to download the file
-    var tempLink = document.createElement("a");
-    var unique_filename = new Date().toISOString();
-    tempLink.download = unique_filename + ".wav";
-    tempLink.href = url;
-    tempLink.click();
+  var mixBlob = recordingToBlob(Float32BitSampleArray);
+  //console.log("vmixBlob=",mixBlob);
+  const url = URL.createObjectURL(mixBlob); // Create a link to download the file
+  var tempLink = document.createElement("a");
+  var unique_filename = new Date().toISOString();
+  tempLink.download = unique_filename + ".wav";
+  tempLink.href = url;
+  tempLink.click();
 }
 
 // Create an instance of wavesurfer for the audio file to be followed
@@ -879,20 +879,10 @@ function loadUrlFile(e) {
   stopButton0.removeAttribute("hidden");
   playPauseButton0.removeAttribute("hidden");
   muteButton0.removeAttribute("hidden");
-  console.log("file = ",e);
-  const request = wavesurfer0.load( `https://musicolab.hmu.gr/apprepository/downloadPublicFile.php?f=${e}`);
-
-  wavesurfer0.on('ready', () => {
-    const length = +request.response.headers.get('Content-Length')
-    const type = request.response.headers.get('Content-Type')
-
-    if (length > 30 && !type.startsWith("text/html")) {
-      window.awareness?.setLocalStateField("backingTrack", e);
-    } else {
-      window.awareness?.setLocalStateField("backingTrack", null);
-    }
-  });
-
+  //console.log("file = ",e);
+  wavesurfer0.load(
+    `https://musicolab.hmu.gr/apprepository/downloadPublicFile.php?f=${e}`
+  );
   reader.onload = function (e) {
     var contents = e.target.result;
     console.log("contents =", contents);
