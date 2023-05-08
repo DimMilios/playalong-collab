@@ -902,7 +902,7 @@ function readSingleFile(e) {
 
 // Load a file from url
 function loadUrlFile(f, c, u) {
-  Jitsi_User_name = u;
+  Jitsi_User_Name = u;
   document.getElementById("file_label").innerHTML =
     'Following: "' +
     f +
