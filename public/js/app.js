@@ -10,6 +10,25 @@ const userParam = urlParams.get("user");
 const courseParam = urlParams.get("course");
 const collabParam = urlParams.get("collab");
 
+// Create an instance of wavesurfer for the audio file to be followed
+let wavesurfer0 = {};
+
+// Create an instance of wavesurfer for the microphone animation
+var wavesurfer_mic = WaveSurfer.create({
+  container: "#waveform_mic",
+  waveColor: "#999",
+  progressColor: "#fff",
+  cursorWidth: 0,
+  height: 50,
+  plugins: [
+    WaveSurfer.microphone.create({
+      bufferSize: 4096,
+      numberOfInputChannels: 1,
+      numberOfOutputChannels: 1,
+    }),
+  ],
+});
+
 var firstWaveform = true;
 var gumStream; //stream from getUserMedia()
 var rec; //Recorder.js object
@@ -61,6 +80,7 @@ var interval = 60000 / tempo;
 // shim for AudioContext when it's not avb.
 //var AudioContext = window.AudioContext || window.webkitAudioContext;
 var audioContext; //audio context to help us record
+var waveform_micContainer = document.getElementById("waveform_mic");
 var recordButton = document.getElementById("recordButton");
 var stopButton = document.getElementById("stopButton");
 var pauseButton = document.getElementById("pauseButton");
@@ -120,17 +140,17 @@ function setPlaybackSpeed(s) {
   speed01 = s / 100;
   window.speed01 = speed01;
   var t = window.tempo;
-  //console.log("tempo =", t * speed01);
+  console.log("tempo =", t * speed01);
   parent.metronome.setTempo(t);
-  //console.log("speed=", speed);
-  //console.log("speed01=", speed01);
+  console.log("speed=", speed);
+  console.log("speed01=", speed01);
   var playButtons = document.querySelectorAll(".play-button");
-  //console.log("recordings count:", playButtons.length);
+  console.log("recordings count:", playButtons.length);
   for (var i = 0; i < playButtons.length; i++) {
-    //console.log("recording speed", i + 1, "was", playButtons[i].speed);
-    //console.log("desired speed", i + 1, " is", speed / 100);
+    console.log("recording speed", i + 1, "was", playButtons[i].speed);
+    console.log("desired speed", i + 1, " is", speed / 100);
     playButtons[i].set_speed = speed01 / playButtons[i].speed;
-    //console.log("multiply by", playButtons[i].set_speed, "to achieve this");
+    console.log("multiply by", playButtons[i].set_speed, "to achieve this");
     //var finalspeed = playButtons[i].set_speed*playButtons[i].speed;
     //console.log("speed",i+1,"=",finalspeed);
   }
@@ -242,17 +262,15 @@ function startRecording() {
     rec.record();
     //console.log("Recording started");
 
+    //show microphone animation
+    wavesurfer_mic.microphone.start();
+    waveform_micContainer.removeAttribute("hidden");
+
     //if (start_bar < stop_bar) parent.metronome.setPlayStop(true);
     setTimeout(function () {
       parent.metronome.setPlayStop(true);
     }, delayedStart / speed01);
   });
-  //}).catch(function(err) {
-  //enable the record button if getUserMedia() fails
-  //	recordButton.disabled = false;
-  //	stopButton.disabled = false;
-  //	pauseButton.disabled = true;
-  //});
 }
 
 function pauseRecording() {
@@ -267,6 +285,8 @@ function pauseRecording() {
   if (rec.recording) {
     //pause recording
     rec.stop();
+    wavesurfer_mic.microphone.stop();
+    //waveform_micContainer.setAttribute('hidden','true');
     parent.metronome.setPlayStop(false);
     pauseButton.disabled = false;
     pauseButton.setAttribute("title", "Resume recording");
@@ -290,6 +310,7 @@ function pauseRecording() {
     //resume recording
     //console.log("Resuming recording...");
     rec.record();
+    wavesurfer_mic.microphone.start();
     parent.metronome.setPlayStop(true);
     pauseButton.disabled = false;
     pauseButton.setAttribute("title", "Pause recording");
@@ -314,6 +335,7 @@ function pauseRecording() {
 
 function stopRecording() {
   //console.log("stopButton clicked");
+  document.getElementById("speedSlider").disabled = false;
   var stopButtons = document.querySelectorAll(".stop-button");
   var playButtons = document.querySelectorAll(".play-button");
   var playPauseButtons = document.querySelectorAll(".play-pause-button");
@@ -359,6 +381,8 @@ function stopRecording() {
   rec.stop();
   noRecordings++;
   //console.log("Number of recordings = ",noRecordings);
+  wavesurfer_mic.microphone.stop();
+  waveform_micContainer.setAttribute("hidden", "true");
 
   //stop metronome
   parent.metronome.setPlayStop(false);
@@ -846,9 +870,6 @@ function dataToWave(Float32BitSampleArray) {
   tempLink.click();
 }
 
-// Create an instance of wavesurfer for the audio file to be followed
-let wavesurfer0 = {};
-
 // Read a file
 function readSingleFile(e) {
   var file = e.target.files[0];
@@ -856,6 +877,15 @@ function readSingleFile(e) {
     return;
   }
   var reader = new FileReader();
+  const fileInput = document.getElementById("file-input");
+  const fileName = fileInput.value.split(/(\\|\/)/g).pop();
+  roomNameInput.value = "test-room";
+  document.getElementById("file_label").innerHTML =
+    'Following: "' +
+    fileName +
+    '".&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Change backing track:';
+  document.getElementById("file_name").innerHTML = fileName;
+  console.log("Filename = ", document.getElementById("file_name").innerHTML);
   waveform0Container.removeAttribute("hidden");
   timeline0Container.removeAttribute("hidden");
   controls0Container.removeAttribute("hidden");
@@ -871,7 +901,12 @@ function readSingleFile(e) {
 }
 
 // Load a file from url
-function loadUrlFile(e) {
+function loadUrlFile(f, c, u) {
+  Jitsi_User_name = u;
+  document.getElementById("file_label").innerHTML =
+    'Following: "' +
+    f +
+    '".&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Change backing track:';
   var reader = new FileReader();
   waveform0Container.removeAttribute("hidden");
   timeline0Container.removeAttribute("hidden");
@@ -1038,7 +1073,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Check if the 'f' parameter is present in the URL
   if (fileParam) {
     //console.log("file = ",fileParam);
-    loadUrlFile(fileParam);
+    loadUrlFile(fileParam, courseParam, userParam);
   } else {
     console.log('Missing "f" parameter in URL, no audio file loaded');
   }
@@ -1098,6 +1133,12 @@ document.addEventListener("DOMContentLoaded", function () {
     wavesurfer0.on("seek", function () {
       seekingPos = ~~(wavesurfer0.backend.getPlayedPercents() * length);
     });
+    wavesurfer0.on("finish", function () {
+      //wavesurfer.seekTo(0); // move the cursor to the beggining of the wavesurfer waveform
+      playPauseButton0.innerHTML =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="green" class="bi bi-play-fill" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>';
+      playPauseButton0.title = "Play";
+    });
   });
 
   // Play-pause button
@@ -1120,6 +1161,7 @@ document.addEventListener("DOMContentLoaded", function () {
   playButton0.onclick = function () {
     wavesurfer0.setPlaybackRate(speed01);
     wavesurfer0.play();
+    document.getElementById("speedSlider").disabled = true;
   };
   // Pause button
   pauseButton0.onclick = function () {

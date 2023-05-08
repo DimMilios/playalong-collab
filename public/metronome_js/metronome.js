@@ -29,8 +29,8 @@ class Metronome{
         this.timerWorker = null;     // The Web Worker used to fire timer messages
         
         // viglis
-        var start_bar = -1;
-        var stop_bar = 1;
+        var start_bar = 0;
+        var stop_bar = 2;
         var continuous_play = false;
         
         // my adjustments

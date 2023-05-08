@@ -2,7 +2,7 @@
     animation: flash 1000ms linear infinite;
   }
   
-@keyframes flash {
+  @keyframes flash {
     0% {
       opacity: 1;
     }
@@ -15,14 +15,21 @@
 } 
 
 #waveform {
-    width: 800px;
+    width: 95vw;
     height: 50px;  
-  }
+}
 
-waveform-class {
-  width: 800px;
-  height: 50px; 
-  }
+.waveform-class {
+  width: 90vw;
+  height: 50px;
+  margin: 0 auto;
+}
+
+.buttons-class {
+  width: 90vw;
+  height: 50px;
+  margin: 0 auto;
+}
 
 form {
   display: flex;
@@ -55,4 +62,8 @@ label {
   opacity: 0;
   cursor: pointer;
   z-index: 1;
+}
+
+#waveform_mic {
+  width: 75vw;
 }
