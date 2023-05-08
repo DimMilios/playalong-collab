@@ -916,7 +916,7 @@ function loadUrlFile(f, c, u) {
   muteButton0.removeAttribute("hidden");
   //console.log("file = ",e);
   wavesurfer0.load(
-    `https://musicolab.hmu.gr/apprepository/downloadPublicFile.php?f=${e}`
+    `https://musicolab.hmu.gr/apprepository/downloadPublicFile.php?f=${f}`
   );
   reader.onload = function (e) {
     var contents = e.target.result;
