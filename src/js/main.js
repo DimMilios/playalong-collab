@@ -74,14 +74,24 @@ function setupCollaboration() {
   const playerConfig = ydoc.getMap("playerConfig");
   playerConfig.observe((event) => {
     for (let key of event.keysChanged) {
-      switch (key) {
-        case "playbackSpeed":
-          if (!event.transaction.local) {
-            window.setSpeedRemote(playerConfig.get(key));
-          }
-          break;
-        default:
-          console.warn("unsupported configuration variable: ", key);
+      const value = playerConfig.get(key);
+      if (!event.transaction.local) {
+        switch (key) {
+          case "playbackSpeed":
+            window.setSpeedRemote(value);
+            break;
+          case "tempoValue":
+            window.setTempoValueRemote(value);
+            break;
+          case "numerator":
+            window.setNumeratorRemote(value);
+            break;
+          case "denominator":
+            window.setDenominatorRemote(value);
+            break;
+          default:
+            console.warn("unsupported configuration variable: ", key);
+        }
       }
     }
   });

@@ -337,14 +337,17 @@
         function setNumerator(v) {
             //console.log('numerator changed to: ', v);
             parent.metronome.setNumerator(v);
+            window.playerConfig?.set("numerator", v);
         }
         function setDenominator(v) {
             //console.log('denominator changed to: ', v);
             parent.metronome.setDenominator(v);
+            window.playerConfig?.set("denominator", v);
         }
         function setTempo(t) {
             parent.metronome.setTempo(t);
             document.getElementById('tempoValue').innerHTML = t;
+            window.playerConfig?.set("tempoValue", t);
         }
         function setResolution(r) {
             //console.log('resolution changed to: ', r);
@@ -434,6 +437,22 @@
         parent.document.addEventListener('stoppedEvent', function (e) {
             document.getElementById('playStop').checked = false;
         });
+
+        // Set metronome values on collaboration mode
+        function setTempoValueRemote(tempo) {
+            parent.metronome.setTempo(tempo);
+            document.getElementById('tempoSlider').value = tempo;
+            document.getElementById('tempoValue').innerHTML = tempo;
+        }
+
+        function setNumeratorRemote(v) {
+            parent.metronome.setNumerator(v);
+            document.getElementById('TSNumerator').value = v;
+        }
+        function setDenominatorRemote(v) {
+            parent.metronome.setDenominator(v);
+            document.getElementById('TSDenominator').value = v;
+        }
     </script>
 
 </body>
